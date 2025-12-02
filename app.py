@@ -39,4 +39,4 @@ if st.button('Summarize') and input_text.strip():
                     st.write(f"{i}. {kp}")
         except Exception as e:
             st.error(f'Error while summarizing: {e}')
-            st.info('Try a smaller model or shorter input if you see memory errors.')\n
+            st.info('Try a smaller model or shorter input if you see memory errors :')")\n
