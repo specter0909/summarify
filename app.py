@@ -1,30 +1,22 @@
 import streamlit as st
 from transformers import pipeline
 
-# Load summarization model
+st.set_page_config(page_title="AI Summarizer", layout="wide")
+
+st.title("📚 AI Text Summarizer")
+st.write("Paste any text, article, blog, report, or book chapter below and get a clean summary.")
+
 summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
 
-st.title("AI Text Summarizer ✨")
-st.write("Paste any long text below and click Summarize to get a shorter version.")
+text = st.text_area("Enter text to summarize:", height=300)
 
-# Input text box
-user_input = st.text_area("Enter text to summarize", height=300)
+summary_length = st.slider("Summary length:", 50, 300, 120)
 
-# Button to trigger summarization
 if st.button("Summarize"):
-    if user_input.strip():
-        try:
-            summary = summarizer(
-                user_input,
-                max_length=300,
-                min_length=80,
-                do_sample=False
-            )[0]["summary_text"]
-
-            st.subheader("Summary:")
-            st.write(summary)
-
-        except Exception as e:
-            st.error(f"Error during summarization: {e}")
+    if len(text) < 50:
+        st.warning("Enter more text to summarize…")
     else:
-        st.warning("Please enter some text first.")
+        with st.spinner("Summarizing..."):
+            result = summarizer(text, max_length=summary_length, min_length=50, do_sample=False)
+            st.subheader("🔍 Summary")
+            st.write(result[0]['summary_text'])
