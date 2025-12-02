@@ -1,65 +1,72 @@
 import streamlit as st
-from transformers import T5Tokenizer, T5ForConditionalGeneration
-import pdfplumber
-import docx2txt
-import requests
-from bs4 import BeautifulSoup
+from transformers import pipeline
 from youtube_transcript_api import YouTubeTranscriptApi
+import re
+import docx2txt
+import fitz
 
-st.set_page_config(page_title="AI Summarizer", page_icon="🧠", layout="wide")
+# Title
+st.title("✨ AI Summarizer - By Om Jethani")
 
+# Load summarizer
 @st.cache_resource
-def load_model():
-    tokenizer = T5Tokenizer.from_pretrained("t5-small")
-    model = T5ForConditionalGeneration.from_pretrained("t5-small")
-    return tokenizer, model
+def load_summarizer():
+    return pipeline("summarization", model="facebook/bart-large-cnn")
 
-tokenizer, model = load_model()
+summarizer = load_summarizer()
 
-def summarize_text(text, max_len):
-    input_text = "summarize: " + text
-    inputs = tokenizer.encode(input_text, return_tensors="pt", max_length=4000, truncation=True)
-    outputs = model.generate(inputs, max_length=max_len, min_length=40, length_penalty=2.0)
-    return tokenizer.decode(outputs[0], skip_special_tokens=True)
+# Function to summarize text
+def summarize_text(text, max_length=200):
+    summary = summarizer(text, max_length=max_length, min_length=50, do_sample=False)
+    return summary[0]["summary_text"]
 
-st.title("🧠 AI Text Summarizer")
+# Extract text from PDF
+def read_pdf(file):
+    pdf = fitz.open(stream=file.read(), filetype="pdf")
+    text = ""
+    for page in pdf:
+        text += page.get_text()
+    return text
 
-summary_len = st.slider("Summary length (words)", 50, 300, 120)
+# Extract text from YouTube
+def extract_youtube_transcript(url):
+    video_id = re.search(r"v=([^&]+)", url).group(1)
+    transcript = YouTubeTranscriptApi.get_transcript(video_id)
+    return " ".join([t["text"] for t in transcript])
 
-choice = st.selectbox("Choose Input Type", ["Text", "Upload PDF/DOCX", "Website URL", "YouTube Link"])
+# Sidebar
+choice = st.sidebar.selectbox(
+    "Choose input type",
+    ["Text", "Upload File", "YouTube Link"]
+)
+
+text_data = ""
 
 if choice == "Text":
-    text = st.text_area("Enter text")
-    if st.button("Summarize"):
-        st.write(summarize_text(text, summary_len))
+    text_data = st.text_area("Enter your text")
 
-elif choice == "Upload PDF/DOCX":
-    file = st.file_uploader("Upload a PDF or DOCX", type=["pdf","docx"])
-    if file:
-        if file.type == "application/pdf":
-            with pdfplumber.open(file) as pdf:
-                text = ""
-                for page in pdf.pages:
-                    page_text = page.extract_text()
-                    if page_text:
-                        text += page_text
-        else:
-            text = docx2txt.process(file)
-        if st.button("Summarize File"):
-            st.write(summarize_text(text, summary_len))
-
-elif choice == "Website URL":
-    url = st.text_input("Enter article url")
-    if st.button("Summarize URL"):
-        html = requests.get(url).text
-        soup = BeautifulSoup(html, "html.parser")
-        text = " ".join([p.text for p in soup.find_all("p")])
-        st.write(summarize_text(text, summary_len))
+elif choice == "Upload File":
+    uploaded = st.file_uploader("Upload Document (PDF/TXT/DOCX)", type=["pdf", "txt", "docx"])
+    if uploaded:
+        if uploaded.type == "application/pdf":
+            text_data = read_pdf(uploaded)
+        elif uploaded.type == "text/plain":
+            text_data = uploaded.read().decode("utf-8")
+        elif uploaded.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+            text_data = docx2txt.process(uploaded)
 
 elif choice == "YouTube Link":
-    yt = st.text_input("Enter YouTube link")
-    if st.button("Summarize Video"):
-        video_id = yt.split("=")[-1]
-        transcript = YouTubeTranscriptApi.get_transcript(video_id)
-        text = " ".join([x['text'] for x in transcript])
-        st.write(summarize_text(text, summary_len))
+    url = st.text_input("Enter YouTube video link")
+    if st.button("Extract Transcript"):
+        text_data = extract_youtube_transcript(url)
+        st.success("Transcript extracted successfully!")
+
+# Summarize button
+if st.button("Summarize"):
+    if text_data.strip():
+        with st.spinner("Summarizing..."):
+            summary = summarize_text(text_data)
+            st.subheader("🔍 Summary:")
+            st.write(summary)
+    else:
+        st.warning("Please enter or upload content first")
