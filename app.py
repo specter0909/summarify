@@ -1,5 +1,6 @@
 import streamlit as st
-from summarizer import Summarizer
+from transformers import pipeline
+summarizer = pipeline("summarization")
 import pdfplumber
 
 st.set_page_config(page_title='Summarify - Text & PDF Summarizer', layout='centered')
