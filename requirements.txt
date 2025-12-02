@@ -4,3 +4,4 @@ torch>=1.13
 bert-extractive-summarizer
 pdfplumber>=0.7.6
 tqdm>=4.64\n
+sentencepiece
