@@ -11,7 +11,7 @@ st.write("Upload a PDF or paste text below to generate a smart summary.")
 
 # Function to summarize text using Gemini model
 def summarize_text(text):
-    model = genai.GenerativeModel("gemini-pro")
+    model = genai.GenerativeModel("gemini-1.5-flash-latest")
     response = model.generate_content(f"Summarize this clearly and concisely:\n\n{text}")
     return response.text
 
