@@ -1,4 +1,10 @@
 import streamlit as st
+import google.generativeai as genai
+
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+
+st.title("AI Summarizer App")
+import streamlit as st
 import PyPDF2
 import pandas as pd
 from docx import Document
