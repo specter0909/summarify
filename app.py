@@ -1,62 +1,42 @@
 import streamlit as st
 import google.generativeai as genai
+import PyPDF2
 
+# Configure Gemini API key
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 
-st.title("AI Summarizer App")
-import streamlit as st
-import PyPDF2
-import pandas as pd
-from docx import Document
-import google.generativeai as genai
+st.set_page_config(page_title="AI Summarizer", layout="centered")
+st.title("📄 AI Summarizer – Text & PDF")
+st.write("Upload a PDF or paste text below to generate a smart summary.")
 
-st.set_page_config(page_title="AI Summarizer", layout="wide")
-st.title("AI Summarizer Tool")
+# Function to summarize text using Gemini model
+def summarize_text(text):
+    model = genai.GenerativeModel("gemini-pro")
+    response = model.generate_content(f"Summarize this clearly and concisely:\n\n{text}")
+    return response.text
 
-# API Key input
-api_key = st.text_input("Enter Gemini API Key", type="password")
-if api_key:
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-1.5-flash")
+# PDF upload section
+uploaded_file = st.file_uploader("Upload PDF", type="pdf")
 
-option = st.selectbox(
-    "Select upload type",
-    ("PDF File", "Text", "Word File", "Excel File")
-)
+text_input = st.text_area("Or paste text here", height=200)
 
-text_data = ""
+if st.button("Summarize"):
+    final_text = ""
 
-if option == "PDF File":
-    pdf_file = st.file_uploader("Upload PDF", type=["pdf"])
-    if pdf_file:
-        reader = PyPDF2.PdfReader(pdf_file)
-        for page in reader.pages:
-            text_data += page.extract_text()
-        st.text_area("Extracted Text", text_data, height=300)
+    # Extract PDF text if uploaded
+    if uploaded_file is not None:
+        pdf_reader = PyPDF2.PdfReader(uploaded_file)
+        for page in pdf_reader.pages:
+            final_text += page.extract_text()
 
-elif option == "Text":
-    text_data = st.text_area("Enter text manually", height=300)
+    # Or use typed text
+    elif text_input.strip() != "":
+        final_text = text_input
 
-elif option == "Word File":
-    doc_file = st.file_uploader("Upload DOCX", type=["docx"])
-    if doc_file:
-        doc = Document(doc_file)
-        text_data = "\n".join([p.text for p in doc.paragraphs])
-        st.text_area("Extracted text", text_data, height=300)
-
-elif option == "Excel File":
-    excel_file = st.file_uploader("Upload Excel File", type=["xlsx"])
-    if excel_file:
-        df = pd.read_excel(excel_file)
-        st.write(df)
-        text_data = df.to_string()
-
-# summarizing
-if api_key and text_data:
-    if st.button("Generate Summary"):
+    if final_text.strip() == "":
+        st.error("Please upload a PDF or paste some text to summarize.")
+    else:
         with st.spinner("Summarizing..."):
-            response = model.generate_content(
-                f"Summarize the following text in bullet points:\n{text_data}"
-            )
-            st.subheader("Summary")
-            st.write(response.text)
+            summary = summarize_text(final_text)
+            st.subheader("✨ Summary")
+            st.write(summary)
