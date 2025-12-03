@@ -1,8 +1,8 @@
 import streamlit as st
+from google.generativeai import GenerativeModel
 import google.generativeai as genai
 import PyPDF2
 
-# Configure Gemini API key
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 
 st.set_page_config(page_title="AI Summarizer", layout="centered")
