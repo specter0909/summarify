@@ -1,9 +1,9 @@
 import streamlit as st
-from google.generativeai import GenerativeModel
 import google.generativeai as genai
 import PyPDF2
 
-genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
+model = genai.GenerativeModel("gemini-1.5-flash-latest")
 
 st.set_page_config(page_title="AI Summarizer", layout="centered")
 st.title("📄 AI Summarizer – Text & PDF")
