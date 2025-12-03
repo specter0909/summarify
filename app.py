@@ -2,41 +2,50 @@ import streamlit as st
 import google.generativeai as genai
 import PyPDF2
 
+# Configure Gemini API Key from Streamlit Secrets
 genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
-model = genai.GenerativeModel("gemini-1.5-flash-latest")
 
-st.set_page_config(page_title="AI Summarizer", layout="centered")
-st.title("📄 AI Summarizer – Text & PDF")
-st.write("Upload a PDF or paste text below to generate a smart summary.")
+# Load Gemini model
+model = genai.GenerativeModel("gemini-1.5-flash")
 
-# Function to summarize text using Gemini model
+# Function to summarize text using Gemini
 def summarize_text(text):
-    model = genai.GenerativeModel("gemini-1.5-flash-latest")
     response = model.generate_content(f"Summarize this clearly and concisely:\n\n{text}")
     return response.text
 
+# Extract text from uploaded PDF
+def extract_text_from_pdf(pdf_file):
+    reader = PyPDF2.PdfReader(pdf_file)
+    text = ""
+    for page in reader.pages:
+        text += page.extract_text()
+    return text
+
+# Streamlit UI
+st.set_page_config(page_title="AI Summarizer", layout="centered")
+st.title("🧠 AI Summarizer - Text & PDF ")
+st.write("Upload a PDF or paste text below to generate a smart summary.")
+
+# Text input section
+input_text = st.text_area("Enter text to summarize:")
+
 # PDF upload section
-uploaded_file = st.file_uploader("Upload PDF", type="pdf")
+uploaded_file = st.file_uploader("Or upload a PDF", type=["pdf"])
 
-text_input = st.text_area("Or paste text here", height=200)
+final_text = ""
 
-if st.button("Summarize"):
-    final_text = ""
+if uploaded_file is not None:
+    final_text = extract_text_from_pdf(uploaded_file)
 
-    # Extract PDF text if uploaded
-    if uploaded_file is not None:
-        pdf_reader = PyPDF2.PdfReader(uploaded_file)
-        for page in pdf_reader.pages:
-            final_text += page.extract_text()
+elif input_text.strip() != "":
+    final_text = input_text
 
-    # Or use typed text
-    elif text_input.strip() != "":
-        final_text = text_input
-
+# Summarize Button
+if st.button("Generate Summary"):
     if final_text.strip() == "":
-        st.error("Please upload a PDF or paste some text to summarize.")
+        st.warning("⚠️ Please upload a file or enter some text.")
     else:
         with st.spinner("Summarizing..."):
             summary = summarize_text(final_text)
-            st.subheader("✨ Summary")
-            st.write(summary)
+        st.subheader("📌 Summary Result")
+        st.write(summary)
