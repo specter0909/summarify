@@ -6,7 +6,7 @@ import requests
 from urllib.parse import urlparse, parse_qs
 
 # Load summarizer model
-summarizer = pipeline("summarization", model="t5-small", tokenizer="t5-small")
+summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
 
 st.set_page_config(page_title="AI Text Summarizer", layout="wide")
 st.title("📚 AI Text Summarizer")
